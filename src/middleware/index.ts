@@ -1,6 +1,6 @@
 import * as jwt from 'jsonwebtoken';
 
-import { JWT_SECRET } from '../constants';
+import { STATUS_CODE_BAD_REQUEST_ERROR, STATUS_CODE_UNAUTHORIZED_ERROR, JWT_SECRET } from '../constants';
 import { HttpError } from '../helpers/errors/HttpError';
 
 const authenticate = (req, res, next) => {
@@ -10,7 +10,7 @@ const authenticate = (req, res, next) => {
 
   if (!token) {
     const httpError = new HttpError({
-      status: 401,
+      status: STATUS_CODE_UNAUTHORIZED_ERROR,
       message: 'User should provide token.',
     });
 
@@ -20,7 +20,7 @@ const authenticate = (req, res, next) => {
   jwt.verify(token, JWT_SECRET, err => {
     if (err) {
       const httpError = new HttpError({
-        status: 401,
+        status: STATUS_CODE_UNAUTHORIZED_ERROR,
         message: 'Token is not valid.',
       });
 
@@ -33,7 +33,7 @@ const authenticate = (req, res, next) => {
 const validateAcronymBody = (req, res, next) => {
   if (!req.body.name || !req.body.definition) {
     const httpError = new HttpError({
-      status: 400,
+      status: STATUS_CODE_BAD_REQUEST_ERROR,
       message: 'Acronym should have name and description.',
     });
 

@@ -6,7 +6,7 @@ import { Acronym as AcronymType, GetAcronymOptions, GetAcronymsResponse } from '
 import logger from '../lib/logger';
 import Acronym from '../models/Acronym';
 import IAcronymRepository from './interfaces/IAcronymRepository';
-import { MONGO_DUPLICATE_KEY_ERROR_CODE } from '../constants';
+import { MONGO_DUPLICATE_KEY_ERROR_CODE, STATUS_CODE_CONFLICT_ERROR, STATUS_CODE_NOT_FOUND_ERROR } from '../constants';
 
 @injectable()
 export default class AcronymRepository implements IAcronymRepository {
@@ -54,15 +54,20 @@ export default class AcronymRepository implements IAcronymRepository {
     };
   }
 
-  async createAcronym(acronym: AcronymType): Promise<void> {
+  async createAcronym(acronym: AcronymType): Promise<AcronymType> {
     try {
       const createdAcronym = await Acronym.create(acronym);
 
       logger.info(`Acronym ${createdAcronym.name}: ${createdAcronym.definition} successfully created.`);
+
+      return {
+        name: createdAcronym.name,
+        definition: createdAcronym.definition,
+      };
     } catch (err) {
       if (err.code === MONGO_DUPLICATE_KEY_ERROR_CODE) {
         throw new HttpError({
-          status: 409,
+          status: STATUS_CODE_CONFLICT_ERROR,
           message: `Acronym: ${acronym.name} - ${acronym.definition} already exists!`,
         });
       }
@@ -76,7 +81,7 @@ export default class AcronymRepository implements IAcronymRepository {
     );
 
     if (!updatedAcronym) {
-      throw new HttpError({ status: 404, message: 'Acronym not found.' });
+      throw new HttpError({ status: STATUS_CODE_NOT_FOUND_ERROR, message: 'Acronym not found.' });
     }
 
     logger.info(`Acronym ${updatedAcronym.name}: ${updatedAcronym.definition} successfully updated.`);
@@ -86,7 +91,7 @@ export default class AcronymRepository implements IAcronymRepository {
     const deletedAcronym = await Acronym.findOneAndDelete({ name: acronym });
 
     if (!deletedAcronym) {
-      throw new HttpError({ status: 404, message: 'Acronym not found.' });
+      throw new HttpError({ status: STATUS_CODE_NOT_FOUND_ERROR, message: 'Acronym not found.' });
     }
 
     logger.info(`Acronym ${deletedAcronym.name}: ${deletedAcronym.definition} successfully deleted.`);

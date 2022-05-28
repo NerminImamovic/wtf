@@ -8,7 +8,14 @@ import {
   httpDelete,
 } from 'inversify-express-utils';
 
-import { SOMETHING_WENT_WRONG_ERROR } from '../constants';
+import {
+  SOMETHING_WENT_WRONG_ERROR,
+  STATUS_CODE_CRATED,
+  STATUS_CODE_INTERNAL_SERVER_ERROR,
+  STATUS_CODE_NO_CONTENT,
+  STATUS_CODE_PARTIAL_CONTENT,
+} from '../constants';
+import { HttpError } from '../helpers/errors/HttpError';
 import logger from '../lib/logger';
 import { authenticate, validateAcronymBody } from '../middleware';
 import IAcronymService from '../services/interfaces/IAcronymService';
@@ -22,6 +29,8 @@ export default class AcronymController {
 
   @httpGet('/')
   public async getAcronyms(req: Request, res: Response) {
+    logger.info('GET /acronyms');
+
     const options = {
       limit: +req.query.limit || 10,
       skip: req.query.from ? +req.query.from - 1 : 0,
@@ -33,7 +42,7 @@ export default class AcronymController {
 
       const upperBorder = Math.min(
         options.skip + options.limit,
-        data.totalCount
+        data.totalCount,
       );
 
       const lowerBorder = Math.min(
@@ -42,17 +51,14 @@ export default class AcronymController {
       );
 
       return res
-        .status(206)
+        .status(STATUS_CODE_PARTIAL_CONTENT)
         .set(
           'Content-Range',
           `acronyms ${lowerBorder} - ${upperBorder}/${data.totalCount}`
         )
         .json(data.acronyms);
     } catch (err) {
-      const errStatus = err.status || 500;
-      const errorMessage = err.message || SOMETHING_WENT_WRONG_ERROR;
-
-      return res.status(errStatus).json({ message: errorMessage });
+      return this.handleError(res, err);
     }
   }
 
@@ -61,14 +67,11 @@ export default class AcronymController {
     logger.info('POST /acronym');
 
     try {
-      await this.acronymService.createAcronym(req.body);
+      const acronym = await this.acronymService.createAcronym(req.body);
 
-      return res.status(201).json();
+      return res.status(STATUS_CODE_CRATED).json(acronym);
     } catch (err) {
-      const errStatus = err.status || 500;
-      const errorMessage = err.message || SOMETHING_WENT_WRONG_ERROR;
-
-      return res.status(errStatus).json({ message: errorMessage });
+      return this.handleError(res, err);
     }
   }
 
@@ -81,12 +84,9 @@ export default class AcronymController {
     try {
       await this.acronymService.updateAcronym(acroynm, req.body);
 
-      res.status(204);
+      res.status(STATUS_CODE_NO_CONTENT);
     } catch (err) {
-      const errStatus = err.status || 500;
-      const errorMessage = err.message || SOMETHING_WENT_WRONG_ERROR;
-
-      return res.status(errStatus).json({ message: errorMessage });
+      return this.handleError(res, err);
     }
   }
 
@@ -98,12 +98,16 @@ export default class AcronymController {
 
     try {
       await this.acronymService.deleteAcronym(acroynm);
-      res.status(204);
+      res.status(STATUS_CODE_NO_CONTENT);
     } catch (err) {
-      const errStatus = err.status || 500;
-      const errorMessage = err.message || SOMETHING_WENT_WRONG_ERROR;
-
-      return res.status(errStatus).json({ message: errorMessage });
+      return this.handleError(res, err);
     }
+  }
+
+  private handleError(res: Response, err: HttpError) {
+    const errStatus = err.status || STATUS_CODE_INTERNAL_SERVER_ERROR;
+    const errorMessage = err.message || SOMETHING_WENT_WRONG_ERROR;
+
+    return res.status(errStatus).json({ message: errorMessage });
   }
 }

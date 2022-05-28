@@ -13,7 +13,7 @@ import serverInstance from '../../src/server';
 describe('Application Endpoint tests', () => {
   const request = supertest(serverInstance);
 
-  beforeAll(async done => {
+  beforeEach(async done => {
     await mongoose.connect(MONGO_URL);
     done();
   });
@@ -112,18 +112,25 @@ describe('Application Endpoint tests', () => {
 
       done();
     });
+
+    it('should throw internal server error for issues on', async done => {
+      // Reproduce some mongoDB issue
+      await mongoose.disconnect();
+
+      const response = await request.get('/acronym');
+      expect(response.status).toBe(500);
+
+      done();
+    });
   });
 
   describe('POST /acronym - Create Acronym', () => {
     it('should create Acronym', async done => {
-      const acrs = await Acronym.find({});
-
-      console.log(`ACRS ${JSON.stringify(acrs)}`);
-
       const acronym = { name: 'acr', definition: 'acronym' };
       const response = await request.post('/acronym').send(acronym);
 
       expect(response.status).toEqual(201);
+      expect(extractAcronym(response)).toStrictEqual(acronym);
 
       const insertedAcroynms = await readAcronyms();
       expect(insertedAcroynms).toStrictEqual([acronym]);
@@ -135,10 +142,12 @@ describe('Application Endpoint tests', () => {
       const acronym1 = { name: 'acr', definition: 'acronym1' };
       const response1 = await request.post('/acronym').send(acronym1);
       expect(response1.status).toEqual(201);
+      expect(extractAcronym(response1)).toStrictEqual(acronym1);
 
       const acronym2 = { name: 'acr', definition: 'acronym2' };
       const response2 = await request.post('/acronym').send(acronym2);
       expect(response2.status).toEqual(201);
+      expect(extractAcronym(response2)).toStrictEqual(acronym2);
 
       const insertedAcroynms = await readAcronyms();
       expect(insertedAcroynms).toStrictEqual([acronym1, acronym2]);
@@ -150,10 +159,12 @@ describe('Application Endpoint tests', () => {
       const acronym1 = { name: 'acr1', definition: 'acronym' };
       const response1 = await request.post('/acronym').send(acronym1);
       expect(response1.status).toEqual(201);
+      expect(extractAcronym(response1)).toStrictEqual(acronym1);
 
       const acronym2 = { name: 'acr2', definition: 'acronym' };
       const response2 = await request.post('/acronym').send(acronym2);
       expect(response2.status).toEqual(201);
+      expect(extractAcronym(response1)).toStrictEqual(acronym1);
 
       const insertedAcroynms = await readAcronyms();
       expect(insertedAcroynms).toStrictEqual([acronym1, acronym2]);
@@ -175,6 +186,13 @@ describe('Application Endpoint tests', () => {
 
       done();
     });
+
+    it('should throw bad request error for missing body', async done => {
+      const response1 = await request.post('/acronym').send(undefined);
+      expect(response1.status).toEqual(400);
+
+      done();
+    })
   });
 
   describe('PUT /acronym/:acronym - Update Acronym', () => {
@@ -303,6 +321,12 @@ describe('Application Endpoint tests', () => {
     const acronyms = await Acronym.find();
 
     return acronyms.map(({ name, definition }) => ({ name, definition }));
+  }
+
+  function extractAcronym(response): AcronymType {
+    const responseData = response.text;
+    const responseBody = JSON.parse(responseData) as AcronymType;
+    return responseBody;
   }
 
   function extractAcronyms(response): AcronymType[] {

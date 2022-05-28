@@ -4,6 +4,7 @@ import { Acronym, GetAcronymOptions, GetAcronymsResponse } from '../types';
 import IAcronymRepository from '../repositories/interfaces/IAcronymRepository';
 import IAcronymService from './interfaces/IAcronymService';
 import { HttpError } from '../helpers/errors/HttpError';
+import { STATUS_CODE_FORBIDDEN_ERROR } from '../constants';
 
 @injectable()
 export default class AcronymService implements IAcronymService {
@@ -15,7 +16,7 @@ export default class AcronymService implements IAcronymService {
     return this.acronymRepository.getAcronyms(options);
   }
 
-  public async createAcronym(acronym: Acronym): Promise<void> {
+  public async createAcronym(acronym: Acronym): Promise<Acronym> {
     return this.acronymRepository.createAcronym(acronym);
   }
 
@@ -24,7 +25,7 @@ export default class AcronymService implements IAcronymService {
     acronym: Acronym
   ): Promise<void> {
     if (acronymName !== acronym.name) {
-      throw new HttpError({ status: 403, message: 'Could not update wrong acronym' });
+      throw new HttpError({ status: STATUS_CODE_FORBIDDEN_ERROR, message: 'Forbidden to update acronyms with different name.' });
     }
 
     return this.acronymRepository.updateAcronym(acronym);
