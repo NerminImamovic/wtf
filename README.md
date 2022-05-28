@@ -16,6 +16,7 @@ A few things to note in the project:
 
 * **[.env file for configuration](#environment)** - Change server config like app port, mongo url etc
 * **[Winston Logger](#logging)** - Uses winston as the logger for the application.
+* **[Inversify](https://github.com/inversify)** - A powerful and lightweight inversion of control container for JavaScript & Node.js apps powered by TypeScript.
 
 * **ESLINT** - ESLINT is configured for linting.
 * **Jest** - Using Jest for running test cases

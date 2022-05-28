@@ -1,4 +1,3 @@
-import * as _ from 'lodash';
 import mongoose from 'mongoose';
 
 import { NODE_ENV, MONGO_URL, TEST_ENV } from '../constants';
