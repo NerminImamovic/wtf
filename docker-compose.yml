@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+  api-server:
+    build:
+      context: .
+    container_name: api-server
+    image: api-server
+    depends_on:
+      - "mongo"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGO_URL=mongodb://mongo/acronyms
+      - JWT_SECRET=secret
+    volumes:
+      - ./logs:/logs
+    networks:
+      - app-network
+    ports:
+      - "3000:3000"
+  mongo:
+    image: mongo:5.0
+    container_name: mongo
+    networks:
+      - app-network
+    volumes:
+      - ./data/prod/mongo:/data/db
+    ports:
+      - "27017:27017"
+
+networks:
+  app-network:
+    driver: bridge
