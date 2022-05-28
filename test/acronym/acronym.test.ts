@@ -13,7 +13,7 @@ import serverInstance from '../../src/server';
 describe('Application Endpoint tests', () => {
   const request = supertest(serverInstance);
 
-  beforeEach(async done => {
+  beforeAll(async done => {
     await mongoose.connect(MONGO_URL);
     done();
   });
@@ -112,16 +112,6 @@ describe('Application Endpoint tests', () => {
 
       done();
     });
-
-    it('should throw internal server error for issues on', async done => {
-      // Reproduce some mongoDB issue
-      await mongoose.disconnect();
-
-      const response = await request.get('/acronym');
-      expect(response.status).toBe(500);
-
-      done();
-    });
   });
 
   describe('POST /acronym - Create Acronym', () => {
@@ -188,8 +178,8 @@ describe('Application Endpoint tests', () => {
     });
 
     it('should throw bad request error for missing body', async done => {
-      const response1 = await request.post('/acronym').send(undefined);
-      expect(response1.status).toEqual(400);
+      const response = await request.post('/acronym').send(undefined);
+      expect(response.status).toEqual(400);
 
       done();
     })
